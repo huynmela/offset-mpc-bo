@@ -187,7 +187,7 @@ def get_prob_info(
         lterm = cas.Function('lterm', [x,yref], [ltrm])
 
     term_eq_cons = True
-    target_penalty = 2e1
+    target_penalty = 1.0e1
     warm_start = False
 
     # observer

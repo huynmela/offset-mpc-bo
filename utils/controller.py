@@ -135,7 +135,7 @@ class NominalMPC(MPC):
             constrain_dinput = True
 
         # create NLP opti object
-        opti = cas.Opti()
+        opti = cas.Opti('conic')
 
         # Initialize container lists for all states, inputs, and outputs
         X = [0 for j in range(Np+1)]
@@ -198,10 +198,10 @@ class NominalMPC(MPC):
         p_opts = {'verbose': 0,
                   'expand': True,
                   'print_time': 0}          # problem options
-        s_opts = {'max_iter': 1000,
+        s_opts = {#'max_iter': 1000,
                   'print_level': 0,
                   'tol': 1e-6}              # solver options
-        opti.solver('ipopt', p_opts, s_opts) # add the solver to the opti object
+        opti.solver('qrqp', s_opts) # add the solver to the opti object
 
         # save list containers of variables/parameters into a dict for portability
         opti_vars = {}
@@ -378,8 +378,8 @@ class OffsetFreeMPC(MPC):
         more details on the optimization problem, the user is referred to the 
         paper associated with the release of this code.
         
-        This code uses IPOPT for the NLP solver which is distributed with 
-        CasADi. Users are referred to IPOPT [https://coin-or.github.io/Ipopt/] 
+        This code uses QRQP solver which is distributed with 
+        CasADi. Users are referred to [https://casadi.sourceforge.net/v3.4.4/api/internal/d3/d9f/classcasadi_1_1Qrqp.html] 
         and the associated paper for more information on this solver.
         """
         ## unpack relevant problem information
@@ -423,7 +423,7 @@ class OffsetFreeMPC(MPC):
             constrain_dinput = True
 
         # create NLP opti object
-        opti = cas.Opti()
+        opti = cas.Opti('conic')
 
         # Initialize container lists for all states, inputs, and outputs
         X = [0 for j in range(Np+1)]
@@ -435,7 +435,7 @@ class OffsetFreeMPC(MPC):
         
         J = 0 # initialize cost/objective function
         J_soft = 0.
-        backoff = 0.2
+        backoff = 0.1
         
         ## define parameter(s), variable(s), and problem
         X[0] = opti.parameter(nx) # initial state as a parameter
@@ -538,13 +538,15 @@ class OffsetFreeMPC(MPC):
         opti.minimize( J )
 
         # set solver options
-        p_opts = {'verbose': 0,
-                  'expand': True,
-                  'print_time': 0}          # problem options
-        s_opts = {'max_iter': 1000,
-                  'print_level': 0,
-                  'tol': 1e-6}              # solver options
-        opti.solver('ipopt', p_opts, s_opts) # add the solver to the opti object
+#         p_opts = {#'print_level': False,
+#                   'expand': False,
+#                   'print_time': 0}          # problem options
+        s_opts = {'print_header': False,
+            'print_iter': False,
+            'error_on_fail': False,
+                  'max_iter': 2500
+        }              # solver options
+        opti.solver('qrqp', s_opts) # add the solver to the opti object
 
         # save list containers of variables/parameters into a dict for portability
         opti_vars = {}
