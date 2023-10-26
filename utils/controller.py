@@ -429,9 +429,14 @@ class OffsetFreeMPC(MPC):
         X = [0 for j in range(Np+1)]
         # Y = [0 for j in range(Np+1)]
         U = [0 for j in range(Np)]
-
+        
+        Eps_max = [0 for _ in range(Np)]
+        Eps_min = [0 for _ in range(Np)]
+        
         J = 0 # initialize cost/objective function
-
+        J_soft = 0.
+        backoff = 0.2
+        
         ## define parameter(s), variable(s), and problem
         X[0] = opti.parameter(nx) # initial state as a parameter
         opti.set_value(X[0], np.zeros((nx,1)))
@@ -471,6 +476,9 @@ class OffsetFreeMPC(MPC):
         # the loop below systematically defines the variables of the optimal
         # control problem (OCP) over the prediction horizon
         for k in range(Np):
+            Eps_min[k] = opti.variable(nx)
+            Eps_max[k] = opti.variable(nx)
+            
             # variable and constraints for u_{k}
             U[k] = opti.variable(nu)
             opti.subject_to(opti.bounded(u_min, U[k], u_max))
@@ -481,8 +489,12 @@ class OffsetFreeMPC(MPC):
 
             # variable x_{k+1}
             X[k+1] = opti.variable(nx)
-            opti.subject_to(opti.bounded(x_min, X[k+1], x_max))
+#             opti.subject_to(opti.bounded(x_min, X[k+1], x_max))
             opti.set_initial(X[k+1], x_init)
+            opti.subject_to(x_min - Eps_min[k] <= X[k+1])
+            opti.subject_to(X[k+1] <= x_max - backoff + Eps_max[k])
+            opti.subject_to(0 <= Eps_min[k])
+            opti.subject_to(0 <= Eps_max[k])
 
             # # variable y_{k+1}
             # Y[k+1] = opti.variable(ny)
@@ -499,9 +511,13 @@ class OffsetFreeMPC(MPC):
                 J += ustage(U[k],U[k-1])
             elif k>0 and constrain_dinput:
                 opti.subject_to(opti.bounded(du_min, U[k]-U[k-1], du_max))
-
+        
+        # Collect the epsilon vector
+        for i in range(Np):
+            J_soft += Eps_max[i][0] + Eps_max[i][1] #+ Eps_min[i][0] + Eps_max[i][1]
+        
         # terminal cost and constraints
-        J_end = term_cost(X[-1], Xss)
+        J_end = term_cost(X[-1], Xss) + 50 * J_soft
         J += J_end
 
         # target penalty

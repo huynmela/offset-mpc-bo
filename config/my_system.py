@@ -175,7 +175,7 @@ def get_prob_info(
         lstage = cas.Function('lstage', [x,u,x_ss,u_ss], [lstg])
 
         # terminal cost
-        P = 1*np.eye(nx)
+        P = 0*np.eye(nx)
         ltrm = (x-x_ss).T @ P @ (x-x_ss)
         lterm = cas.Function('lterm', [x,x_ss], [ltrm])
 
@@ -187,11 +187,11 @@ def get_prob_info(
         lterm = cas.Function('lterm', [x,yref], [ltrm])
 
     term_eq_cons = True
-    target_penalty = 5e1
+    target_penalty = 2e1
     warm_start = False
 
     # observer
-    Qobs = 1e-3 * np.eye(nx+nd)
+    Qobs = 1e-4 * np.eye(nx+nd)
     Robs = 1e-3 * np.eye(ny)
     
     
